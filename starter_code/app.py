@@ -16,7 +16,6 @@ from flask_migrate import Migrate
 from datetime import datetime
 import sys
 
-
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -60,7 +59,6 @@ class Venue(db.Model):
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     city = db.Column(db.String(120), nullable=False)
