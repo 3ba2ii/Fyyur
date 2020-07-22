@@ -13,7 +13,7 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
-
+import sys
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -51,7 +51,7 @@ class Venue(db.Model):
 
     # 1 to Many relationship as the venue may have multiple shows,
     # that further will be distributed to upcoming and past shows
-    venue_shows = db.relationship('show', backref='venue-shows', lazy=True)
+    venue_shows = db.relationship('Show', backref='venue-shows', lazy=True)
 
     # DONE:: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -74,7 +74,7 @@ class Artist(db.Model):
                                     nullable=True)
     # 1 to Many relationship as the artist may have multiple shows,
     # that further will be distributed to upcoming and past shows
-    artist_shows = db.relationship('show', backref='artist-shows', lazy=True)
+    artist_shows = db.relationship('Show', backref='artist-shows', lazy=True)
 
     # Done: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -259,13 +259,44 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    # DONE: insert form data as a new Venue record in the db, instead
+    # DONE: modify data to be the data object returned from db insertion
+    data = {}
+    try:
+        for key, value in request.form.items():
+            if key == 'genres':
+                continue
+            elif key == 'seeking_talent':
+                if value.lower() == 'yes':
+                    data['seeking_talent'] = True
+                else:
+                    data['seeking_talent'] = False
+            else:
+                data[key] = value
+        data['genres'] = request.form.getlist('genres')
+        venue = Venue(name=data['name'],
+                      city=data['city'], state=data['state'],
+                      address=data['address'],
+                      phone=data['phone'],
+                      facebook_link=data['facebook_link'],
+                      image_link=data['image_link'],
+                      website=data['website'],
+                      seeking_talent=data['seeking_talent'],
+                      genres=data['genres'])
+        db.session.add(venue)
+        db.session.commit()
+        flash('Venue ' + data['name'] + ' was successfully listed!')
+
+    except:
+        db.session.rollback()
+        print(sys.exc_info())
+        flash('An error occurred. Venue ' +
+              data['name'] + ' could not be listed.')
+    finally:
+        db.session.close()
 
     # on successful db insert, flash success
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
+    # Done: on unsuccessful db insert, flash an error instead.
     # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
     return render_template('pages/home.html')
 
