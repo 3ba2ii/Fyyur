@@ -224,4 +224,11 @@ class ArtistForm(Form):
         'facebook_link', validators=[URL()]
     )
 
+    website = StringField('website', validators=[URL()])
+
+    seeking_venue = StringField('seeking_venue', validators=[
+        DataRequired()])
+
+    seeking_description = StringField('seeking_description', validators=[
+        DataRequired()])
 # TODO IMPLEMENT NEW ARTIST FORM AND NEW SHOW FORM
