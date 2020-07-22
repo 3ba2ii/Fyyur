@@ -88,11 +88,13 @@ class Artist(db.Model):
 class Show(db.Model):
     __tablename__ = 'show'
     id = db.Column(db.Integer, primary_key=True)
-    start_date = db.Column(db.DateTime, nullable=False)
-    venue_id = db.Column(db.Integer, db.ForeignKey(
-        'venue.id'), nullable=False,)
-    artist_id = db.Column(db.Integer, db.ForeignKey(
-        'artist.id'), nullable=False)
+
+
+b    start_time = db.Column(db.DateTime, nullable=False)
+venue_id = db.Column(db.Integer, db.ForeignKey(
+    'venue.id'), nullable=False,)
+artist_id = db.Column(db.Integer, db.ForeignKey(
+    'artist.id'), nullable=False)
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -125,11 +127,11 @@ def distribute_shows(venue_shows):
     upcoming_shows, past_shows = [], []
     for show_id in venue_shows:
         show_date = Show.query.filter_by(
-            id=show_id.id).first().start_date
+            id=show_id.id).first().start_time
         show_date = (str(show_date).split())[0]
         show_date = time.mktime(
             datetime.datetime.strptime(show_date, "%Y-%m-%d").timetuple())
-        if Show.query.filter_by(id=show_id.id).first().start_date > datetime.datetime.utcnow():
+        if Show.query.filter_by(id=show_id.id).first().start_time > datetime.datetime.utcnow():
             upcoming_shows.append(show_id)
         else:
             past_shows.append(show_id)
@@ -182,25 +184,33 @@ def search_venues():
 def show_venue(venue_id):
     # shows the venue page with the given venue_id
     # TODO: replace with real venue data from the venues table, using venue_id
-    venue = Venue.query.filter_by(id=venue_id).first()
+    venue = Venue.query.get(venue_id)
+    shows = Show.query.filter_by(venue_id=venue_id).all()
+    upcoming_shows, past_shows = distribute_shows(venue.venue_shows)
 
     print('-'*80)
-    print(venue)
+    print(upcoming_shows, past_shows)
     print('-'*80)
-    upcoming_shows, past_shows = distribute_shows(venue.venue_shows)
     past = []
+    upcoming = []
     for show in past_shows:
         past_show_by_artist = {}
-
-        selected_show = Show.query.filter(id=show).first()
-        past_show_by_artist['artist_id'] = selected_show.artist_id
-        selected_artist = Artist.query.filter(
-            id=selected_show.artist_id).first()
+        past_show_by_artist['artist_id'] = show.artist_id
+        selected_artist = Artist.query.get(show.artist_id)
         past_show_by_artist['artist_name'] = selected_artist.name
         past_show_by_artist['start_time'] = format_datetime(
-            selected_show.start_date)
+            str(show.start_time))
         past_show_by_artist['artist_image_link'] = selected_artist.image_link
         past.append(past_show_by_artist)
+    for show in upcoming_shows:
+        upcome = {}
+        upcome['artist_id'] = show.artist_id
+        selected_artist = Artist.query.get(show.artist_id)
+        upcome['artist_name'] = selected_artist.name
+        upcome['start_time'] = format_datetime(str(show.start_time))
+        upcome['artist_image_link'] = selected_artist.image_link
+
+        upcoming.append(upcome)
     data = {
         "id": venue.id,
         "name": venue.name,
@@ -215,12 +225,17 @@ def show_venue(venue_id):
         "seeking_description": venue.seeking_description,
         "image_link": venue.image_link,
         "past_shows": past,
-        "upcoming_shows": upcoming_shows,
+        "upcoming_shows": upcoming,
         "past_shows_count": len(past_shows),
         "upcoming_shows_count": len(upcoming_shows),
     }
+    print('*'*80)
+    print('*'*80)
 
     print(data)
+    print('*'*80)
+    print('*'*80)
+
     return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
@@ -564,8 +579,9 @@ def create_shows():
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
     body = request.form
+    print(body)
     try:
-        show = Show(start_date=body['start_time'],
+        show = Show(start_time=body['start_time'],
                     artist_id=body['artist_id'], venue_id=body['venue_id'])
         db.session.add(show)
         db.session.commit()
@@ -573,6 +589,8 @@ def create_show_submission():
     except:
         db.session.rollback()
         print(sys.exc_info())
+        flash('Something went wrong please try again!')
+
     finally:
         db.session.close()
     # on successful db insert, flash success
