@@ -149,6 +149,21 @@ def format_artist_shows(shows):
         temp['venue_image_link'] = venue.image_link
         result.append(temp)
     return result
+
+
+def format_venue_shows(shows):
+    result = []
+    for show in shows:
+        temp = {}
+        temp['artist_id'] = show.artist_id
+        selected_artist = Artist.query.get(show.artist_id)
+        temp['artist_name'] = selected_artist.name
+        temp['start_time'] = format_datetime(
+            str(show.start_time))
+        temp['artist_image_link'] = selected_artist.image_link
+        result.append(temp)
+    return result
+
 #  SECTION Venues
 #  ----------------------------------------------------------------
 
@@ -188,29 +203,9 @@ def search_venues():
 def show_venue(venue_id):
     venue = Venue.query.get(venue_id)
     shows = Show.query.filter_by(venue_id=venue_id).all()
-    upcoming_shows, past_shows = distribute_shows(venue.venue_shows)
+    upcoming_shows, past_shows = [format_venue_shows(
+        lst) for lst in distribute_shows(venue.venue_shows)]
 
-    past = []
-    upcoming = []
-    for show in past_shows:
-        past_show = {}
-        past_show['artist_id'] = show.artist_id
-        selected_artist = Artist.query.get(show.artist_id)
-        past_show['artist_name'] = selected_artist.name
-        past_show['start_time'] = format_datetime(
-            str(show.start_time))
-        past_show['artist_image_link'] = selected_artist.image_link
-        past.append(past_show)
-
-    for show in upcoming_shows:
-        future = {}
-        future['artist_id'] = show.artist_id
-        selected_artist = Artist.query.get(show.artist_id)
-        future['artist_name'] = selected_artist.name
-        future['start_time'] = format_datetime(str(show.start_time))
-        future['artist_image_link'] = selected_artist.image_link
-
-        upcoming.append(future)
     data = {
         "id": venue.id,
         "name": venue.name,
@@ -224,8 +219,8 @@ def show_venue(venue_id):
         "seeking_talent": venue.seeking_talent,
         "seeking_description": venue.seeking_description,
         "image_link": venue.image_link,
-        "past_shows": past,
-        "upcoming_shows": upcoming,
+        "past_shows": past_shows,
+        "upcoming_shows": upcoming_shows,
         "past_shows_count": len(past_shows),
         "upcoming_shows_count": len(upcoming_shows),
     }
