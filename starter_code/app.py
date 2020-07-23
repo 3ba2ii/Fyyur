@@ -14,8 +14,9 @@ from flask_wtf import Form
 from flask_migrate import Migrate
 import sys
 import time
-import datetime
+from datetime import datetime
 from sqlalchemy.ext.declarative import declarative_base
+from forms import *
 
 
 #----------------------------------------------------------------------------#
@@ -129,8 +130,8 @@ def distribute_shows(venue_shows):
             id=show_id.id).first().start_time
         show_date = (str(show_date).split())[0]
         show_date = time.mktime(
-            datetime.datetime.strptime(show_date, "%Y-%m-%d").timetuple())
-        if Show.query.filter_by(id=show_id.id).first().start_time > datetime.datetime.utcnow():
+            datetime.strptime(show_date, "%Y-%m-%d").timetuple())
+        if Show.query.filter_by(id=show_id.id).first().start_time > datetime.utcnow():
             upcoming_shows.append(show_id)
         else:
             past_shows.append(show_id)
@@ -201,9 +202,9 @@ def search_venues():
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
     venue = Venue.query.get(venue_id)
-    shows = Show.query.filter_by(venue_id=venue_id).all()
-    upcoming_shows, past_shows = [format_venue_shows(
-        lst) for lst in distribute_shows(venue.venue_shows)]
+    upcoming_shows, past_shows = distribute_shows(venue.venue_shows)
+    upcoming_shows, past_shows = format_venue_shows(
+        upcoming_shows), format_venue_shows(past_shows)
 
     data = {
         "id": venue.id,
